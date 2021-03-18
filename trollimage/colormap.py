@@ -27,19 +27,24 @@ import numpy as np
 from trollimage.colorspaces import rgb2hcl, hcl2rgb
 
 
-def colorize(arr, colors, values):
+def colorize(arr, colors, values, hcl=False):
     """Colorize a monochromatic array *arr*, based *colors* given for
     *values*. Interpolation is used. *values* must be in ascending order.
     """
-    hcolors = np.array([rgb2hcl(*i[:3]) for i in colors])
-    # unwrap colormap in hcl space
-    hcolors[:, 0] = np.rad2deg(np.unwrap(np.deg2rad(np.array(hcolors)[:, 0])))
+    xcolors = colors
+    if hcl:
+        xcolors = np.array([rgb2hcl(*i[:3]) for i in colors])
+        # unwrap colormap in hcl space
+        xcolors[:, 0] = np.rad2deg(np.unwrap(np.deg2rad(np.array(xcolors)[:, 0])))
+    
     channels = [np.interp(arr,
                           np.array(values),
-                          np.array(hcolors)[:, i])
+                          np.array(xcolors)[:, i])
                 for i in range(3)]
 
-    channels = list(hcl2rgb(*channels))
+    ## hcl2rgb is a bottleneck to be optimized...
+    if hcl:
+        channels = list(hcl2rgb(*channels))
 
     rest = [np.interp(arr,
                       np.array(values),
